@@ -72,12 +72,10 @@
         const socket = io();
         let isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-        // REGISTRA SERVICE WORKER PER PWA
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
         }
 
-        // POPUP AGGIUNGI A HOME
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -89,7 +87,6 @@
             }, 5000);
         });
 
-        // ADMIN TRIGGER
         document.getElementById('trigger').addEventListener('click', () => {
             window.clicks = (window.clicks || 0) + 1;
             if (window.clicks === 5) {
@@ -140,9 +137,23 @@
         function rendering(s) {
             const div = document.createElement('div');
             div.className = 'animate-fade-in gold-border bg-zinc-950 p-4 rounded-lg relative overflow-hidden shadow-xl';
+            
+            // LOGICA SOCIAL SCANNER: Riconosce @nome e crea link
+            let testoLinkato = s.testo;
+            if(s.testo.includes('@')) {
+                const parole = s.testo.split(' ');
+                testoLinkato = parole.map(p => {
+                    if(p.startsWith('@')) {
+                        const user = p.replace('@', '').replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+                        return `<span class="text-blue-500 underline font-bold cursor-pointer" onclick="window.open('https://www.instagram.com/${user}')">${p}</span>`;
+                    }
+                    return p;
+                }).join(' ');
+            }
+
             div.innerHTML = `
                 <div class="flex justify-between items-center text-[8px] text-zinc-500 mb-3 font-black tracking-widest border-b border-zinc-900 pb-2">
-                    <span>ID_${s.id % 10000} // DATABASE_PZ</span>
+                    <span>SESSION_ID: ${s.id % 10000} // DATABASE_PZ</span>
                     <span class="gold-text uppercase">🔥 ${s.likes} brucia</span>
                 </div>
                 ${s.foto ? `
@@ -151,7 +162,10 @@
                              onclick="if(!isAdmin) this.classList.toggle('no-blur')">
                     </div>
                 ` : ''}
-                <p class="text-sm leading-relaxed text-zinc-200 font-medium mb-4">${s.testo}</p>
+                <p class="text-sm leading-relaxed text-zinc-200 font-medium mb-4">${testoLinkato}</p>
+                
+                ${s.testo.includes('@') ? `<div class="mb-4 p-2 bg-blue-900/10 border border-blue-500/20 rounded text-[7px] text-blue-400 animate-pulse tracking-tighter uppercase">🔍 Scansione Profilo Social in corso...</div>` : ''}
+
                 <div class="flex justify-between items-center pt-2 border-t border-zinc-900">
                     <span class="text-[7px] text-zinc-700 uppercase italic font-bold">${new Date(s.id).toLocaleTimeString()} // LOG_ANONIMO</span>
                     ${isAdmin ? `
